@@ -1,0 +1,77 @@
+{
+  "Git Commands": {
+    // ... comandos anteriores ...
+    "Git Status": {
+      "name": "Check Status",
+      "command": "git status",
+      "description": "Check repository status",
+      "interactive": "false"
+    },
+    "Git Pull": {
+      "name": "Pull Changes",
+      "command": "git pull",
+      "description": "Pull remote changes",
+      "interactive": "true"
+    },
+    "Git Push": {
+      "name": "Push Changes",
+      "command": "git push",
+      "description": "Push local changes",
+      "interactive": "true"
+    }
+  },
+  "Flutter Commands": {
+    // ... comandos anteriores ...
+    "Pub Get": {
+      "name": "Flutter Pub Get",
+      "command": "flutter pub get",
+      "description": "Get dependencies",
+      "interactive": "false"
+    },
+    "Build Windows": {
+      "name": "Build Windows",
+      "command": "flutter build windows",
+      "description": "Build Windows app",
+      "interactive": "true"
+    },
+    "Doctor": {
+      "name": "Flutter Doctor",
+      "command": "flutter doctor -v",
+      "description": "Check Flutter setup",
+      "interactive": "false"
+    }
+  },
+  "NodeJS Commands": {
+    // ... comandos anteriores ...
+    "Dev Mode": {
+      "name": "Run Dev Mode",
+      "command": "npm run dev",
+      "description": "Run in development mode",
+      "interactive": "true"
+    },
+    "Test": {
+      "name": "Run Tests",
+      "command": "npm test",
+      "description": "Run test suite",
+      "interactive": "true"
+    },
+    "Audit": {
+      "name": "Security Audit",
+      "command": "npm audit fix",
+      "description": "Fix security issues",
+      "interactive": "true"
+    },
+    "Clear Cache": {
+      "name": "Clear NPM Cache",
+      "command": "npm cache clean --force",
+      "description": "Clear NPM cache",
+      "interactive": "false"
+    },
+    "List Global": {
+      "name": "List Global Packages",
+      "command": "npm list -g --depth=0",
+      "description": "List global packages",
+      "interactive": "false"
+    }
+  }
+}

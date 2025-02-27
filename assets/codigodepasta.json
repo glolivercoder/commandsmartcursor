@@ -1,0 +1,30 @@
+{
+  "directorySelection": {
+    "databaseSchema": {
+      "savedDirectories": {
+        "tableName": "saved_directories",
+        "columns": {
+          "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
+          "name": "TEXT NOT NULL",
+          "path": "TEXT NOT NULL",
+          "saved_at": "DATETIME DEFAULT CURRENT_TIMESTAMP"
+        }
+      }
+    },
+    "functions": {
+      "saveDirectory": {
+        "description": "Saves a directory path with formatted name to database",
+        "parameters": ["name", "path"],
+        "implementation": "static Future<int> saveDirectory(String name, String path) async {\n  final db = await database;\n  final now = DateTime.now();\n  final formattedName = '${name}_${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year} ${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';\n  return await db.insert('saved_directories', {\n    'name': formattedName,\n    'path': path,\n    'saved_at': now.toIso8601String(),\n  });\n}"
+      },
+      "getSavedDirectories": {
+        "description": "Retrieves all saved directories ordered by save date",
+        "implementation": "static Future<List<Map<String, dynamic>>> getSavedDirectories() async {\n  final db = await database;\n  return await db.query('saved_directories', orderBy: 'saved_at DESC');\n}"
+      },
+      "setDirectory": {
+        "description": "Sets the current working directory after validating it exists",
+        "implementation": "Future<void> setDirectory(String path) async {\n  if (Directory(path).existsSync()) {\n    _currentDirectory = path;\n    await _saveSettings();\n    await DatabaseService.saveDirectory(path.split('\\\\').last, path);\n    notifyListeners();\n  }\n}"
+      }
+    }
+  }
+}
