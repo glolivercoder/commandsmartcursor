@@ -7,6 +7,7 @@ import '../providers/directory_provider.dart';
 import 'dart:io';
 import '../database/database.dart';
 import 'dart:async';
+import 'dart:convert';
 
 class CommandCategories extends StatefulWidget {
   const CommandCategories({Key? key}) : super(key: key);
@@ -88,6 +89,7 @@ class _CommandCategoriesState extends State<CommandCategories> {
     if (seconds <= 0) return;
     
     final commandProvider = Provider.of<CommandProvider>(context, listen: false);
+    final workingDirectory = Provider.of<DirectoryProvider>(context, listen: false).currentDirectory;
     
     if (seconds == 1) {
       await commandProvider.executeCommand(context, command);
@@ -98,26 +100,42 @@ class _CommandCategoriesState extends State<CommandCategories> {
     }
 
     try {
+      // Criar um arquivo batch temporário para executar o comando e fechar após o tempo
+      final batchFile = File('${workingDirectory}\\temp_command.bat');
+      await batchFile.writeAsString('''
+@echo off
+echo Executando comando por ${seconds} segundos...
+${command['command']}
+timeout /t ${seconds} /nobreak > nul
+exit
+''');
+
       final process = await Process.start(
         'cmd.exe',
-        ['/C', command['command']!],
+        ['/C', 'start', '/wait', batchFile.path],
         runInShell: true,
-        workingDirectory: Provider.of<DirectoryProvider>(context, listen: false).currentDirectory,
+        workingDirectory: workingDirectory,
       );
 
       _runningProcesses[commandId] = process;
 
-      Timer(Duration(seconds: seconds), () {
-        if (_runningProcesses.containsKey(commandId)) {
-          _runningProcesses[commandId]!.kill(ProcessSignal.sigterm);
-          _runningProcesses.remove(commandId);
-        }
+      // Monitorar saída do processo
+      process.stdout.transform(utf8.decoder).listen((data) {
+        print('Command output: $data');
+      });
+
+      process.stderr.transform(utf8.decoder).listen((data) {
+        print('Command error: $data');
       });
 
       // Monitor process exit
-      process.exitCode.then((_) {
+      process.exitCode.then((_) async {
         if (_runningProcesses.containsKey(commandId)) {
           _runningProcesses.remove(commandId);
+          // Limpar o arquivo batch temporário
+          if (await batchFile.exists()) {
+            await batchFile.delete();
+          }
         }
       });
 
