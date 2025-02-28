@@ -91,10 +91,9 @@ class _CommandCategoriesState extends State<CommandCategories> {
     final commandProvider = Provider.of<CommandProvider>(context, listen: false);
     final workingDirectory = Provider.of<DirectoryProvider>(context, listen: false).currentDirectory;
     
-    if (seconds == 1) {
-      await commandProvider.executeCommand(context, command);
+    if (workingDirectory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Comando bem sucedido')),
+        const SnackBar(content: Text('Por favor, selecione um diretório de trabalho')),
       );
       return;
     }
@@ -104,42 +103,40 @@ class _CommandCategoriesState extends State<CommandCategories> {
       final batchFile = File('${workingDirectory}\\temp_command.bat');
       await batchFile.writeAsString('''
 @echo off
-title Command Smart Timer
 echo Executando comando por ${seconds} segundos...
 echo.
+cd /d "${workingDirectory}"
 ${command['command']}
 echo.
 echo Aguardando ${seconds} segundos para fechar...
-timeout /t ${seconds} /nobreak
+timeout /t ${seconds}
 exit
 ''');
 
-      // Executar o comando em uma nova janela do CMD
+      // Executar o batch file em uma nova janela do CMD
       final process = await Process.start(
         'cmd.exe',
-        ['/c', 'start', 'cmd.exe', '/k', batchFile.path],
-        runInShell: true,
+        ['/c', 'start', '/wait', batchFile.path],
         workingDirectory: workingDirectory,
+        mode: ProcessStartMode.detached,
       );
 
       _runningProcesses[commandId] = process;
 
-      // Aguardar um pouco antes de deletar o arquivo batch
-      Timer(Duration(seconds: seconds + 1), () async {
-        if (await batchFile.exists()) {
-          try {
+      // Timer para deletar o arquivo batch após a execução
+      Timer(Duration(seconds: seconds + 2), () async {
+        try {
+          if (await batchFile.exists()) {
             await batchFile.delete();
-          } catch (e) {
-            print('Error deleting batch file: $e');
           }
+        } catch (e) {
+          print('Erro ao deletar arquivo batch: $e');
         }
-        if (_runningProcesses.containsKey(commandId)) {
-          _runningProcesses.remove(commandId);
-        }
+        _runningProcesses.remove(commandId);
       });
 
     } catch (e) {
-      print('Error executing command with timer: $e');
+      print('Erro ao executar comando com timer: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erro ao executar comando: $e')),
