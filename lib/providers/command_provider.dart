@@ -406,6 +406,68 @@ class CommandProvider with ChangeNotifier {
         'description': 'Create backup branch from commit',
         'interactive': 'true'
       }
+    ],
+    'Windows Commands': [
+      {
+        'name': 'Criar ZIP do Projeto',
+        'command': 'powershell "Compress-Archive -Path * -DestinationPath (\'projeto_\' + (Get-Date -Format \'yyyy-MM-dd_HH-mm\') + \'.zip\') -Force"',
+        'description': 'Cria um arquivo ZIP do projeto atual com data e hora',
+        'interactive': 'false'
+      },
+      {
+        'name': 'Listar Terminais',
+        'command': 'tasklist /FI "IMAGENAME eq cmd.exe" /FI "IMAGENAME eq WindowsTerminal.exe" /FI "IMAGENAME eq wsl.exe"',
+        'description': 'Lista todos os terminais abertos',
+        'interactive': 'false'
+      },
+      {
+        'name': 'Fechar Terminais',
+        'command': 'taskkill /F /IM cmd.exe & taskkill /F /IM WindowsTerminal.exe',
+        'description': 'Fecha todos os terminais abertos',
+        'interactive': 'false'
+      },
+      {
+        'name': 'CMD como Admin',
+        'command': 'powershell Start-Process cmd -Verb RunAs',
+        'description': 'Abre CMD como administrador',
+        'interactive': 'false'
+      },
+      {
+        'name': 'WSL como Admin',
+        'command': 'powershell Start-Process wsl -Verb RunAs',
+        'description': 'Abre WSL como administrador',
+        'interactive': 'false'
+      },
+      {
+        'name': 'Matar Processo',
+        'command': 'taskkill /F /PID',
+        'description': 'Mata um processo pelo PID',
+        'interactive': 'true'
+      },
+      {
+        'name': 'Criar Pasta',
+        'command': 'mkdir',
+        'description': 'Cria uma nova pasta',
+        'interactive': 'true'
+      },
+      {
+        'name': 'Limpar Pasta Temp',
+        'command': 'del /F /Q %temp%\\*',
+        'description': 'Limpa a pasta temporária do Windows',
+        'interactive': 'false'
+      },
+      {
+        'name': 'Info do Sistema',
+        'command': 'systeminfo',
+        'description': 'Mostra informações do sistema',
+        'interactive': 'false'
+      },
+      {
+        'name': 'Verificar Portas',
+        'command': 'netstat -ano | findstr',
+        'description': 'Verifica portas em uso',
+        'interactive': 'true'
+      }
     ]
   };
 

@@ -261,8 +261,36 @@ exit
                                           IconButton(
                                             icon: Icon(Icons.delete, color: Colors.red),
                                             onPressed: () async {
-                                              await DatabaseService.deleteDirectory(directory.id);
-                                              setState(() {});
+                                              final shouldDelete = await showDialog<bool>(
+                                                context: context,
+                                                builder: (context) => AlertDialog(
+                                                  title: const Text('Confirmar Exclusão'),
+                                                  content: Text('Tem certeza que deseja excluir o projeto "${directory.name}"?'),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () => Navigator.pop(context, false),
+                                                      child: const Text('Não'),
+                                                    ),
+                                                    TextButton(
+                                                      style: TextButton.styleFrom(
+                                                        foregroundColor: Colors.red,
+                                                      ),
+                                                      onPressed: () => Navigator.pop(context, true),
+                                                      child: const Text('Sim, Excluir'),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ) ?? false;
+
+                                              if (shouldDelete) {
+                                                await DatabaseService.deleteDirectory(directory.id);
+                                                setState(() {});
+                                                if (context.mounted) {
+                                                  ScaffoldMessenger.of(context).showSnackBar(
+                                                    const SnackBar(content: Text('Projeto excluído com sucesso')),
+                                                  );
+                                                }
+                                              }
                                             },
                                           ),
                                         ],
@@ -406,30 +434,36 @@ exit
                           children: [
                             IconButton(
                               icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                showDialog(
+                              onPressed: () async {
+                                final shouldDelete = await showDialog<bool>(
                                   context: context,
                                   builder: (context) => AlertDialog(
                                     title: const Text('Confirmar Exclusão'),
-                                    content: const Text('Deseja realmente excluir este comando?'),
+                                    content: Text('Tem certeza que deseja excluir o comando "${command['name']}"?'),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Navigator.pop(context),
+                                        onPressed: () => Navigator.pop(context, false),
                                         child: const Text('Não'),
                                       ),
                                       TextButton(
-                                        onPressed: () {
-                                          commandProvider.deleteCommand(category, command);
-                                          Navigator.pop(context);
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(content: Text('Comando excluído!')),
-                                          );
-                                        },
-                                        child: const Text('Sim'),
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Colors.red,
+                                        ),
+                                        onPressed: () => Navigator.pop(context, true),
+                                        child: const Text('Sim, Excluir'),
                                       ),
                                     ],
                                   ),
-                                );
+                                ) ?? false;
+
+                                if (shouldDelete) {
+                                  commandProvider.deleteCommand(category, command);
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Comando excluído com sucesso')),
+                                    );
+                                  }
+                                }
                               },
                             ),
                             IconButton(
