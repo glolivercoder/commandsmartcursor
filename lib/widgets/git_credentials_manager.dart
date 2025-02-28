@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/git_credentials.dart';
 import '../services/database_service.dart';
+import '../database/database.dart';
 
 class GitCredentialsManager extends StatefulWidget {
   const GitCredentialsManager({Key? key}) : super(key: key);
@@ -10,8 +10,8 @@ class GitCredentialsManager extends StatefulWidget {
 }
 
 class _GitCredentialsManagerState extends State<GitCredentialsManager> {
-  List<GitCredentials> _credentials = [];
-  GitCredentials? _selectedCredentials;
+  List<GitCredential> _credentials = [];
+  GitCredential? _selectedCredential;
 
   @override
   void initState() {
@@ -24,7 +24,7 @@ class _GitCredentialsManagerState extends State<GitCredentialsManager> {
     setState(() {
       _credentials = credentials;
       if (credentials.isNotEmpty) {
-        _selectedCredentials = credentials.first;
+        _selectedCredential = credentials.first;
       }
     });
   }
@@ -47,8 +47,8 @@ class _GitCredentialsManagerState extends State<GitCredentialsManager> {
             ],
           ),
           if (_credentials.isNotEmpty)
-            DropdownButton<GitCredentials>(
-              value: _selectedCredentials,
+            DropdownButton<GitCredential>(
+              value: _selectedCredential,
               items: _credentials.map((cred) {
                 return DropdownMenuItem(
                   value: cred,
@@ -56,7 +56,7 @@ class _GitCredentialsManagerState extends State<GitCredentialsManager> {
                 );
               }).toList(),
               onChanged: (value) {
-                setState(() => _selectedCredentials = value);
+                setState(() => _selectedCredential = value);
               },
             ),
         ],
@@ -109,16 +109,13 @@ class _GitCredentialsManagerState extends State<GitCredentialsManager> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final credentials = GitCredentials(
-                id: 0,
-                name: nameController.text,
-                token: tokenController.text,
-                clientId: clientIdController.text,
-                clientSecret: clientSecretController.text,
-                apiUrl: apiUrlController.text,
+              await DatabaseService.addGitCredentials(
+                nameController.text,
+                tokenController.text,
+                clientId: clientIdController.text.isNotEmpty ? clientIdController.text : null,
+                clientSecret: clientSecretController.text.isNotEmpty ? clientSecretController.text : null,
+                apiUrl: apiUrlController.text.isNotEmpty ? apiUrlController.text : null,
               );
-              
-              await DatabaseService.addGitCredentials(credentials);
               Navigator.pop(context);
               _loadCredentials();
             },

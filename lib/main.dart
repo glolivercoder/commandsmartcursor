@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:provider/provider.dart';
+import 'dart:io';
 import 'screens/home_screen.dart';
 import 'providers/directory_provider.dart';
 import 'providers/command_provider.dart';
 import 'providers/git_credentials_provider.dart';
 import 'widgets/draggable_window.dart'; // Adicionada importação do DraggableWindow
+import 'services/database_service.dart';
 // Removida importação não utilizada do theme/app_theme.dart
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize database
+  try {
+    print('Starting database initialization...'); // Debug log
+    await DatabaseService.initialize();
+    print('Database initialized successfully!'); // Debug log
+  } catch (e) {
+    print('Error initializing database: $e'); // Debug log
+  }
+
   await windowManager.ensureInitialized();
 
   const windowOptions = WindowOptions(

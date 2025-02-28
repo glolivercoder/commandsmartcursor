@@ -1,0 +1,120 @@
+{
+  "funcionalidades_criticas": {
+    "selecao_diretorio": {
+      "descricao": "Funcionalidade principal para selecionar o diretório de trabalho",
+      "componentes": {
+        "directory_bar": {
+          "arquivo": "lib/widgets/directory_bar.dart",
+          "funcao_principal": "_saveDirectory",
+          "fluxo": [
+            "1. Usuário clica no ícone de pasta",
+            "2. Abre diálogo do FilePicker para selecionar pasta",
+            "3. Salva o diretório no DirectoryProvider",
+            "4. Atualiza o CommandProvider com o novo diretório",
+            "5. Permite salvar o projeto com nome personalizado"
+          ]
+        },
+        "directory_provider": {
+          "arquivo": "lib/providers/directory_provider.dart",
+          "responsabilidades": [
+            "Manter o diretório atual",
+            "Persistir o diretório nas configurações",
+            "Notificar outros componentes sobre mudanças"
+          ]
+        }
+      }
+    },
+    "execucao_comandos": {
+      "descricao": "Sistema de execução de comandos no diretório selecionado",
+      "componentes": {
+        "command_provider": {
+          "arquivo": "lib/providers/command_provider.dart",
+          "funcao_principal": "executeCommand",
+          "features": [
+            "Executa comandos no diretório atual",
+            "Suporta comandos interativos",
+            "Atualiza informações do projeto após execução",
+            "Monitora mudanças no diretório"
+          ]
+        }
+      }
+    }
+  },
+  "solucoes_implementadas": {
+    "versionamento_projetos": {
+      "descricao": "Sistema de versionamento de projetos salvos",
+      "funcionamento": [
+        "Permite salvar múltiplas versões do mesmo projeto",
+        "Formato: nome_v1, nome_v2, etc",
+        "Mantém histórico de modificações"
+      ]
+    },
+    "monitoramento_alteracoes": {
+      "descricao": "Sistema de monitoramento de alterações nos projetos",
+      "features": [
+        "Verifica alterações a cada 30 segundos",
+        "Atualiza última modificação automaticamente",
+        "Mantém informações do projeto sempre atualizadas"
+      ]
+    },
+    "persistencia_dados": {
+      "descricao": "Sistema de banco de dados SQLite",
+      "tabelas": {
+        "saved_directories": {
+          "campos": [
+            "id: Identificador único",
+            "name: Nome do projeto",
+            "path: Caminho do diretório",
+            "saved_at: Data de salvamento",
+            "created_at: Data de criação",
+            "last_modified: Última modificação",
+            "directory_info: Informações adicionais"
+          ]
+        },
+        "settings": {
+          "campos": [
+            "id: Identificador único",
+            "directory: Diretório atual",
+            "github_token: Token do GitHub",
+            "client_id: ID do cliente",
+            "client_secret: Chave secreta"
+          ]
+        }
+      }
+    }
+  },
+  "melhorias_futuras": {
+    "interface": [
+      "Adicionar preview do conteúdo do diretório",
+      "Melhorar feedback visual durante execução de comandos",
+      "Adicionar histórico de comandos executados"
+    ],
+    "funcionalidades": [
+      "Suporte a templates de projetos",
+      "Backup automático de projetos",
+      "Sincronização com serviços de nuvem",
+      "Sistema de tags para projetos"
+    ],
+    "seguranca": [
+      "Criptografia de credenciais",
+      "Validação de comandos perigosos",
+      "Backup automático do banco de dados"
+    ]
+  },
+  "fluxo_trabalho": {
+    "selecao_diretorio": {
+      "passos": [
+        "1. Clicar no ícone de pasta na barra superior",
+        "2. Selecionar o diretório desejado",
+        "3. Opcional: Dar um nome personalizado ao projeto",
+        "4. O diretório é salvo e definido como atual",
+        "5. Todos os comandos serão executados neste diretório"
+      ],
+      "observacoes": [
+        "O diretório selecionado é persistido entre sessões",
+        "Múltiplos projetos podem ser salvos para acesso rápido",
+        "O sistema monitora alterações no diretório automaticamente"
+      ]
+    }
+  }
+}

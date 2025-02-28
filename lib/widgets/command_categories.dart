@@ -4,6 +4,8 @@ import '../providers/command_provider.dart';
 import '../services/database_service.dart';
 import 'package:intl/intl.dart';
 import '../providers/directory_provider.dart';
+import 'dart:io';
+import '../database/database.dart';
 
 class CommandCategories extends StatefulWidget {
   const CommandCategories({Key? key}) : super(key: key);
@@ -66,7 +68,7 @@ class _CommandCategoriesState extends State<CommandCategories> {
                     return ExpansionTile(
                       title: Text(category),
                       children: [
-                        FutureBuilder<List<Map<String, dynamic>>>(
+                        FutureBuilder<List<SavedDirectory>>(
                           future: DatabaseService.getSavedDirectories(),
                           builder: (context, snapshot) {
                             if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -77,30 +79,49 @@ class _CommandCategoriesState extends State<CommandCategories> {
                             }
                             
                             return Column(
-                              children: snapshot.data!.map((directory) {
-                                final DateTime savedAt = DateTime.parse(directory['saved_at'] as String);
-                                final String formattedDate = DateFormat('dd/MM/yyyy HH:mm').format(savedAt);
-                                return ListTile(
-                                  title: Text(directory['name'] as String),
-                                  subtitle: Text('${directory['path']} - $formattedDate'),
-                                  onTap: () {
-                                    Provider.of<DirectoryProvider>(context, listen: false)
-                                        .setDirectory(directory['path'] as String);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Diretório carregado com sucesso')),
-                                    );
-                                  },
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.delete),
-                                    onPressed: () async {
-                                      await DatabaseService.deleteDirectory(directory['id'] as int);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Diretório removido com sucesso')),
-                                      );
-                                      // Force rebuild of the FutureBuilder
-                                      setState(() {});
-                                    },
-                                  ),
+                              children: snapshot.data!.map((SavedDirectory directory) {
+                                final DateTime savedAt = DateTime.parse(directory.savedAt);
+                                final DateTime lastModified = DateTime.parse(directory.lastModified);
+                                final String formattedSavedAt = DateFormat('dd/MM/yyyy HH:mm').format(savedAt);
+                                final String formattedLastModified = DateFormat('dd/MM/yyyy HH:mm').format(lastModified);
+                                
+                                return ExpansionTile(
+                                  title: Text(directory.name),
+                                  subtitle: Text('Caminho: ${directory.path}'),
+                                  children: [
+                                    ListTile(
+                                      dense: true,
+                                      title: Text('Criado em: $formattedSavedAt'),
+                                      subtitle: Text('Última modificação: $formattedLastModified'),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          IconButton(
+                                            icon: Icon(Icons.folder_open, color: Theme.of(context).primaryColor),
+                                            onPressed: () {
+                                              Process.run('explorer.exe', [directory.path]);
+                                            },
+                                          ),
+                                          IconButton(
+                                            icon: Icon(Icons.delete, color: Colors.red),
+                                            onPressed: () async {
+                                              await DatabaseService.deleteDirectory(directory.id);
+                                              setState(() {});
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                      onTap: () {
+                                        Provider.of<DirectoryProvider>(context, listen: false)
+                                            .setDirectory(directory.path);
+                                        Provider.of<CommandProvider>(context, listen: false)
+                                            .loadSavedDirectories();
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Diretório carregado com sucesso')),
+                                        );
+                                      },
+                                    ),
+                                  ],
                                 );
                               }).toList(),
                             );
@@ -160,8 +181,9 @@ class _CommandCategoriesState extends State<CommandCategories> {
                                             'name': commandName!,
                                             'command': commandText!,
                                             'description': 'Comando personalizado',
-                                            'interactive': 'false'
-                                          }
+                                            'interactive': 'false',
+                                            'id': null
+                                          } as Map<String, dynamic>
                                         );
                                         
                                         ScaffoldMessenger.of(context).showSnackBar(
@@ -252,13 +274,14 @@ class _CommandCategoriesState extends State<CommandCategories> {
                                               newCommandText?.isNotEmpty == true) {
                                             commandProvider.updateCommand(
                                               category,
-                                              command,
+                                              command as Map<String, dynamic>,
                                               {
                                                 'name': newCommandName!,
                                                 'command': newCommandText!,
                                                 'description': command['description']!,
-                                                'interactive': command['interactive']!
-                                              }
+                                                'interactive': command['interactive']!,
+                                                'id': command['id']
+                                              } as Map<String, dynamic>
                                             );
                                             Navigator.pop(context);
                                             ScaffoldMessenger.of(context).showSnackBar(
@@ -287,7 +310,7 @@ class _CommandCategoriesState extends State<CommandCategories> {
                               onPressed: () async {
                                 await commandProvider.executeCommand(
                                   context,
-                                  command
+                                  command as Map<String, dynamic>
                                 );
                               },
                             ),
@@ -296,7 +319,7 @@ class _CommandCategoriesState extends State<CommandCategories> {
                         onTap: () async {
                           await commandProvider.executeCommand(
                             context,
-                            command
+                            command as Map<String, dynamic>
                           );
                         },
                       );

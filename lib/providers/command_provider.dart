@@ -7,7 +7,7 @@ import '../services/database_service.dart';
 import 'directory_provider.dart';
 
 class CommandProvider with ChangeNotifier {
-  Map<String, List<Map<String, String>>> commands = {
+  Map<String, List<Map<String, dynamic>>> commands = {
     'Projetos Salvos': [],
     'Git Init Commands': [
       {
@@ -412,9 +412,14 @@ class CommandProvider with ChangeNotifier {
   Future<void> loadSavedDirectories() async {
     final savedDirs = await DatabaseService.getSavedDirectories();
     commands['Projetos Salvos'] = savedDirs.map((dir) => {
-      'name': dir['name'] as String,
-      'path': dir['path'] as String,
-      'saved_at': dir['saved_at'] as String,
+      'name': dir.name,
+      'path': dir.path,
+      'saved_at': dir.savedAt,
+      'last_modified': dir.lastModified,
+      'id': dir.id,
+      'command': dir.path,
+      'description': 'Diretório do projeto',
+      'interactive': 'false'
     }).toList();
     notifyListeners();
   }
@@ -426,7 +431,7 @@ class CommandProvider with ChangeNotifier {
   Future<void> loadCommands() async {
     final file = File('assets/commands.json');
     final contents = await file.readAsString();
-    commands = Map<String, List<Map<String, String>>>.from(
+    commands = Map<String, List<Map<String, dynamic>>>.from(
       json.decode(contents) as Map<String, dynamic>
     );
     notifyListeners();
@@ -437,7 +442,7 @@ class CommandProvider with ChangeNotifier {
       notifyListeners();
     }
   }
-  Future<void> addCommand(String category, Map<String, String> command) async {
+  Future<void> addCommand(String category, Map<String, dynamic> command) async {
     if (commands.containsKey(category)) {
       commands[category]?.add(command);
       notifyListeners();
@@ -450,7 +455,7 @@ class CommandProvider with ChangeNotifier {
     await Clipboard.setData(ClipboardData(text: command));
   }
 
-  Future<void> executeCommand(BuildContext context, Map<String, String> commandData) async {
+  Future<void> executeCommand(BuildContext context, Map<String, dynamic> commandData) async {
     try {
       final directoryProvider = Provider.of<DirectoryProvider>(context, listen: false);
       final workingDirectory = directoryProvider.currentDirectory;
@@ -533,7 +538,7 @@ class CommandProvider with ChangeNotifier {
     }
   }
 
-  Future<void> deleteCommand(String category, Map<String, String> command) async {
+  Future<void> deleteCommand(String category, Map<String, dynamic> command) async {
     if (commands.containsKey(category)) {
       commands[category]?.remove(command);
       notifyListeners();
@@ -543,7 +548,7 @@ class CommandProvider with ChangeNotifier {
     }
   }
 
-  Future<void> updateCommand(String category, Map<String, String> oldCommand, Map<String, String> newCommand) async {
+  Future<void> updateCommand(String category, Map<String, dynamic> oldCommand, Map<String, dynamic> newCommand) async {
     if (commands.containsKey(category)) {
       final index = commands[category]?.indexOf(oldCommand) ?? -1;
       if (index != -1) {
