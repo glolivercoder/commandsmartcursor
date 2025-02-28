@@ -37,14 +37,23 @@ class AppDatabase extends _$AppDatabase {
   Stream<List<SavedDirectory>> watchAllSavedDirectories() =>
       select(savedDirectories).watch();
 
-  Future<SavedDirectory> saveDirectory(SavedDirectoriesCompanion entry) =>
-      into(savedDirectories).insertReturning(entry);
+  Future<SavedDirectory> saveDirectory(SavedDirectoriesCompanion entry) async {
+    final savedDir = await into(savedDirectories).insertReturning(entry);
+    await _backupDatabase();
+    return savedDir;
+  }
 
-  Future<bool> updateDirectory(SavedDirectoriesCompanion entry) =>
-      update(savedDirectories).replace(entry);
+  Future<bool> updateDirectory(SavedDirectoriesCompanion entry) async {
+    final result = await update(savedDirectories).replace(entry);
+    await _backupDatabase();
+    return result;
+  }
 
-  Future<int> deleteDirectory(int id) =>
-      (delete(savedDirectories)..where((t) => t.id.equals(id))).go();
+  Future<int> deleteDirectory(int id) async {
+    final result = await (delete(savedDirectories)..where((t) => t.id.equals(id))).go();
+    await _backupDatabase();
+    return result;
+  }
 
   // Git Credentials methods
   Future<List<GitCredential>> getAllGitCredentials() =>
@@ -58,6 +67,37 @@ class AppDatabase extends _$AppDatabase {
 
   Future<int> deleteGitCredential(int id) =>
       (delete(gitCredentials)..where((t) => t.id.equals(id))).go();
+
+  // Backup method
+  Future<void> _backupDatabase() async {
+    try {
+      final projectDir = Directory.current;
+      final mainDbFolder = Directory(p.join(projectDir.path, 'projetosalvos'));
+      final backupDir = Directory(p.join(projectDir.path, 'projetosalvosBKP'));
+      
+      // Garantir que ambas as pastas existam
+      if (!mainDbFolder.existsSync()) {
+        mainDbFolder.createSync();
+      }
+      if (!backupDir.existsSync()) {
+        backupDir.createSync();
+      }
+
+      // Copiar todos os arquivos da pasta principal para o backup
+      final mainFiles = mainDbFolder.listSync();
+      for (var entity in mainFiles) {
+        if (entity is File) {
+          final fileName = p.basename(entity.path);
+          final backupFile = File(p.join(backupDir.path, fileName));
+          await entity.copy(backupFile.path);
+        }
+      }
+      
+      print('Database and files backup created at: ${backupDir.path}');
+    } catch (e) {
+      print('Error creating database backup: $e');
+    }
+  }
 }
 
 LazyDatabase _openConnection() {

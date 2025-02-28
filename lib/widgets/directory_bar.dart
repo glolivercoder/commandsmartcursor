@@ -167,11 +167,15 @@ class _DirectoryBarState extends State<DirectoryBar> {
                 },
               ),
               IconButton(
-                icon: Icon(Icons.save, color: Theme.of(context).primaryColor),
+                icon: Icon(Icons.backup, color: Theme.of(context).primaryColor),
+                tooltip: 'Abrir pasta de projetos salvos',
                 onPressed: () async {
                   try {
                     final projectDir = Directory.current;
                     final savedProjectsDir = Directory(p.join(projectDir.path, 'projetosalvos'));
+                    if (!savedProjectsDir.existsSync()) {
+                      savedProjectsDir.createSync();
+                    }
                     await Process.run('explorer.exe', [savedProjectsDir.path]);
                   } catch (e) {
                     print("Erro ao abrir pasta de projetos salvos: $e");
