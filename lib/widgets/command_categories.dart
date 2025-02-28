@@ -100,42 +100,41 @@ class _CommandCategoriesState extends State<CommandCategories> {
     }
 
     try {
-      // Criar um arquivo batch temporário para executar o comando e fechar após o tempo
+      // Criar um arquivo batch temporário para executar o comando
       final batchFile = File('${workingDirectory}\\temp_command.bat');
       await batchFile.writeAsString('''
 @echo off
+title Command Smart Timer
 echo Executando comando por ${seconds} segundos...
+echo.
 ${command['command']}
-timeout /t ${seconds} /nobreak > nul
+echo.
+echo Aguardando ${seconds} segundos para fechar...
+timeout /t ${seconds} /nobreak
 exit
 ''');
 
+      // Executar o comando em uma nova janela do CMD
       final process = await Process.start(
         'cmd.exe',
-        ['/C', 'start', '/wait', batchFile.path],
+        ['/c', 'start', 'cmd.exe', '/k', batchFile.path],
         runInShell: true,
         workingDirectory: workingDirectory,
       );
 
       _runningProcesses[commandId] = process;
 
-      // Monitorar saída do processo
-      process.stdout.transform(utf8.decoder).listen((data) {
-        print('Command output: $data');
-      });
-
-      process.stderr.transform(utf8.decoder).listen((data) {
-        print('Command error: $data');
-      });
-
-      // Monitor process exit
-      process.exitCode.then((_) async {
+      // Aguardar um pouco antes de deletar o arquivo batch
+      Timer(Duration(seconds: seconds + 1), () async {
+        if (await batchFile.exists()) {
+          try {
+            await batchFile.delete();
+          } catch (e) {
+            print('Error deleting batch file: $e');
+          }
+        }
         if (_runningProcesses.containsKey(commandId)) {
           _runningProcesses.remove(commandId);
-          // Limpar o arquivo batch temporário
-          if (await batchFile.exists()) {
-            await batchFile.delete();
-          }
         }
       });
 
