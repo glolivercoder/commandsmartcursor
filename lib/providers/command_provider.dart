@@ -410,22 +410,30 @@ class CommandProvider with ChangeNotifier {
   };
 
   Future<void> loadSavedDirectories() async {
-    final savedDirs = await DatabaseService.getSavedDirectories();
-    commands['Projetos Salvos'] = savedDirs.map((dir) => {
-      'name': dir.name,
-      'path': dir.path,
-      'saved_at': dir.savedAt,
-      'last_modified': dir.lastModified,
-      'id': dir.id,
-      'command': dir.path,
-      'description': 'Diretório do projeto',
-      'interactive': 'false'
-    }).toList();
-    notifyListeners();
+    try {
+      final savedDirs = await DatabaseService.getSavedDirectories();
+      commands['Projetos Salvos'] = savedDirs.map((dir) => {
+        'name': dir.name,
+        'path': dir.path,
+        'saved_at': dir.savedAt,
+        'last_modified': dir.lastModified,
+        'id': dir.id,
+        'command': dir.path,
+        'description': 'Diretório do projeto',
+        'interactive': 'false'
+      }).toList();
+      print('Loaded ${savedDirs.length} saved directories'); // Debug print
+      notifyListeners();
+    } catch (e) {
+      print('Error loading saved directories: $e'); // Debug print
+      commands['Projetos Salvos'] = [];
+      notifyListeners();
+    }
   }
 
-  void initializeCommands() {
-    loadSavedDirectories();
+  void initializeCommands() async {
+    await DatabaseService.initialize();
+    await loadSavedDirectories();
   }
 
   Future<void> loadCommands() async {

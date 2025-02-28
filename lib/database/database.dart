@@ -62,8 +62,15 @@ class AppDatabase extends _$AppDatabase {
 
 LazyDatabase _openConnection() {
   return LazyDatabase(() async {
-    final dbFolder = await getApplicationDocumentsDirectory();
+    // Usar a pasta projetosalvos na raiz do projeto
+    final projectDir = Directory.current;
+    final dbFolder = Directory(p.join(projectDir.path, 'projetosalvos'));
+    if (!dbFolder.existsSync()) {
+      dbFolder.createSync();
+    }
+    
     final file = File(p.join(dbFolder.path, 'command_smart.db'));
+    print('Database path: ${file.path}'); // Debug print
     return NativeDatabase.createInBackground(file);
   });
 } 

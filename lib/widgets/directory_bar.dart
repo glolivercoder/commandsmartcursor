@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../services/directory_watcher_service.dart';
 import 'dart:io';
 import '../database/database.dart';
+import 'package:path/path.dart' as p;
 
 class DirectoryBar extends StatefulWidget {
   const DirectoryBar({Key? key}) : super(key: key);
@@ -139,6 +140,7 @@ class _DirectoryBarState extends State<DirectoryBar> {
                       if (result != null && result.isNotEmpty) {
                         try {
                           final savedDir = await DatabaseService.saveDirectory(result, path);
+                          print("Diretório salvo com ID: ${savedDir.id}"); // Debug print
                           await DirectoryWatcherService.startWatching(savedDir.id, path);
                           if (!context.mounted) return;
                           Provider.of<CommandProvider>(context, listen: false).loadSavedDirectories();
@@ -160,6 +162,22 @@ class _DirectoryBarState extends State<DirectoryBar> {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Erro ao selecionar diretório: $e')),
+                    );
+                  }
+                },
+              ),
+              IconButton(
+                icon: Icon(Icons.save, color: Theme.of(context).primaryColor),
+                onPressed: () async {
+                  try {
+                    final projectDir = Directory.current;
+                    final savedProjectsDir = Directory(p.join(projectDir.path, 'projetosalvos'));
+                    await Process.run('explorer.exe', [savedProjectsDir.path]);
+                  } catch (e) {
+                    print("Erro ao abrir pasta de projetos salvos: $e");
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Erro ao abrir pasta de projetos salvos: $e')),
                     );
                   }
                 },
