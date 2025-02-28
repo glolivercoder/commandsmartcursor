@@ -16,6 +16,7 @@ OutputBaseFilename=CommandSmartSetup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
+PrivilegesRequired=lowest
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -28,8 +29,6 @@ Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescrip
 [Files]
 Source: "build\windows\x64\runner\Release\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
 Source: "build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "projetosalvos\*"; DestDir: "{app}\projetosalvos"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "projetosalvosBKP\*"; DestDir: "{app}\projetosalvosBKP"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

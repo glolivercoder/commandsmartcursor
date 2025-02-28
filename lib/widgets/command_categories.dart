@@ -15,10 +15,27 @@ class CommandCategories extends StatefulWidget {
 }
 
 class _CommandCategoriesState extends State<CommandCategories> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
   @override
   void initState() {
     super.initState();
     Provider.of<CommandProvider>(context, listen: false).initializeCommands();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool _filterProject(SavedDirectory directory) {
+    if (_searchQuery.isEmpty) return true;
+    
+    final searchLower = _searchQuery.toLowerCase();
+    return directory.name.toLowerCase().contains(searchLower) ||
+           directory.path.toLowerCase().contains(searchLower);
   }
 
   @override
@@ -68,6 +85,27 @@ class _CommandCategoriesState extends State<CommandCategories> {
                     return ExpansionTile(
                       title: Text(category),
                       children: [
+                        // Barra de busca
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Buscar projetos...',
+                              prefixIcon: const Icon(Icons.search),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Theme.of(context).cardColor,
+                            ),
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                          ),
+                        ),
                         FutureBuilder<List<SavedDirectory>>(
                           future: DatabaseService.getSavedDirectories(),
                           builder: (context, snapshot) {
@@ -78,8 +116,19 @@ class _CommandCategoriesState extends State<CommandCategories> {
                               );
                             }
                             
+                            final filteredDirectories = snapshot.data!
+                                .where(_filterProject)
+                                .toList();
+
+                            if (filteredDirectories.isEmpty) {
+                              return ListTile(
+                                title: Text('Nenhum resultado para "$_searchQuery"'),
+                                enabled: false,
+                              );
+                            }
+
                             return Column(
-                              children: snapshot.data!.map((SavedDirectory directory) {
+                              children: filteredDirectories.map((SavedDirectory directory) {
                                 final DateTime savedAt = DateTime.parse(directory.savedAt);
                                 final DateTime lastModified = DateTime.parse(directory.lastModified);
                                 final String formattedSavedAt = DateFormat('dd/MM/yyyy HH:mm').format(savedAt);
@@ -171,10 +220,7 @@ class _CommandCategoriesState extends State<CommandCategories> {
                                     onPressed: () {
                                       if (commandName?.isNotEmpty == true && 
                                           commandText?.isNotEmpty == true) {
-                                        // First close the dialog
                                         Navigator.pop(dialogContext);
-                                        
-                                        // Then add the command
                                         commandProvider.addCommand(
                                           category, 
                                           {
@@ -185,7 +231,6 @@ class _CommandCategoriesState extends State<CommandCategories> {
                                             'id': null
                                           } as Map<String, dynamic>
                                         );
-                                        
                                         ScaffoldMessenger.of(context).showSnackBar(
                                           const SnackBar(content: Text('Comando adicionado!')),
                                         );

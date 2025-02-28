@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
 part 'database.g.dart';
@@ -21,6 +20,20 @@ class GitCredentials extends Table {
   TextColumn get clientId => text().nullable()();
   TextColumn get clientSecret => text().nullable()();
   TextColumn get apiUrl => text().nullable()();
+}
+
+LazyDatabase _openConnection() {
+  return LazyDatabase(() async {
+    // Usar a pasta projetosalvos na raiz do projeto
+    final dbFolder = Directory('projetosalvos');
+    if (!dbFolder.existsSync()) {
+      dbFolder.createSync();
+    }
+    
+    final file = File(p.join(dbFolder.path, 'command_smart.db'));
+    print('Database path: ${file.path}'); // Debug print
+    return NativeDatabase.createInBackground(file);
+  });
 }
 
 @DriftDatabase(tables: [SavedDirectories, GitCredentials])
@@ -71,9 +84,8 @@ class AppDatabase extends _$AppDatabase {
   // Backup method
   Future<void> _backupDatabase() async {
     try {
-      final projectDir = Directory.current;
-      final mainDbFolder = Directory(p.join(projectDir.path, 'projetosalvos'));
-      final backupDir = Directory(p.join(projectDir.path, 'projetosalvosBKP'));
+      final mainDbFolder = Directory('projetosalvos');
+      final backupDir = Directory('projetosalvosBKP');
       
       // Garantir que ambas as pastas existam
       if (!mainDbFolder.existsSync()) {
@@ -98,19 +110,4 @@ class AppDatabase extends _$AppDatabase {
       print('Error creating database backup: $e');
     }
   }
-}
-
-LazyDatabase _openConnection() {
-  return LazyDatabase(() async {
-    // Usar a pasta projetosalvos na raiz do projeto
-    final projectDir = Directory.current;
-    final dbFolder = Directory(p.join(projectDir.path, 'projetosalvos'));
-    if (!dbFolder.existsSync()) {
-      dbFolder.createSync();
-    }
-    
-    final file = File(p.join(dbFolder.path, 'command_smart.db'));
-    print('Database path: ${file.path}'); // Debug print
-    return NativeDatabase.createInBackground(file);
-  });
 } 

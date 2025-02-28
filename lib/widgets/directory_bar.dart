@@ -9,6 +9,7 @@ import '../services/directory_watcher_service.dart';
 import 'dart:io';
 import '../database/database.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 class DirectoryBar extends StatefulWidget {
   const DirectoryBar({Key? key}) : super(key: key);
@@ -171,12 +172,11 @@ class _DirectoryBarState extends State<DirectoryBar> {
                 tooltip: 'Abrir pasta de projetos salvos',
                 onPressed: () async {
                   try {
-                    final projectDir = Directory.current;
-                    final savedProjectsDir = Directory(p.join(projectDir.path, 'projetosalvos'));
+                    final savedProjectsDir = Directory('projetosalvos');
                     if (!savedProjectsDir.existsSync()) {
                       savedProjectsDir.createSync();
                     }
-                    await Process.run('explorer.exe', [savedProjectsDir.path]);
+                    await Process.run('explorer.exe', [savedProjectsDir.absolute.path]);
                   } catch (e) {
                     print("Erro ao abrir pasta de projetos salvos: $e");
                     if (!context.mounted) return;
