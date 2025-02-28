@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../providers/directory_provider.dart';
 import 'dart:io';
 import '../database/database.dart';
+import 'dart:async';
 
 class CommandCategories extends StatefulWidget {
   const CommandCategories({Key? key}) : super(key: key);
@@ -16,6 +17,10 @@ class CommandCategories extends StatefulWidget {
 
 class _CommandCategoriesState extends State<CommandCategories> {
   final TextEditingController _searchController = TextEditingController();
+  final Map<String, TextEditingController> _timerControllers = {};
+  final Map<String, bool> _timerEnabled = {};
+  final Map<String, int> _savedTimers = {};
+  final Map<String, Process> _runningProcesses = {};
   String _searchQuery = '';
 
   @override
@@ -27,6 +32,12 @@ class _CommandCategoriesState extends State<CommandCategories> {
   @override
   void dispose() {
     _searchController.dispose();
+    for (var controller in _timerControllers.values) {
+      controller.dispose();
+    }
+    for (var process in _runningProcesses.values) {
+      process.kill();
+    }
     super.dispose();
   }
 
@@ -36,6 +47,88 @@ class _CommandCategoriesState extends State<CommandCategories> {
     final searchLower = _searchQuery.toLowerCase();
     return directory.name.toLowerCase().contains(searchLower) ||
            directory.path.toLowerCase().contains(searchLower);
+  }
+
+  void _showTimerDialog(BuildContext context, String commandId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Definir Tempo'),
+        content: TextField(
+          controller: _timerControllers[commandId],
+          decoration: const InputDecoration(
+            labelText: 'Tempo em segundos',
+            hintText: 'Ex: 30',
+          ),
+          keyboardType: TextInputType.number,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              final seconds = int.tryParse(_timerControllers[commandId]!.text) ?? 0;
+              if (seconds > 0) {
+                setState(() {
+                  _savedTimers[commandId] = seconds;
+                });
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _executeCommandWithTimer(BuildContext context, Map<String, dynamic> command, String commandId, int seconds) async {
+    if (seconds <= 0) return;
+    
+    final commandProvider = Provider.of<CommandProvider>(context, listen: false);
+    
+    if (seconds == 1) {
+      await commandProvider.executeCommand(context, command);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comando bem sucedido')),
+      );
+      return;
+    }
+
+    try {
+      final process = await Process.start(
+        'cmd.exe',
+        ['/C', command['command']!],
+        runInShell: true,
+        workingDirectory: Provider.of<DirectoryProvider>(context, listen: false).currentDirectory,
+      );
+
+      _runningProcesses[commandId] = process;
+
+      Timer(Duration(seconds: seconds), () {
+        if (_runningProcesses.containsKey(commandId)) {
+          _runningProcesses[commandId]!.kill(ProcessSignal.sigterm);
+          _runningProcesses.remove(commandId);
+        }
+      });
+
+      // Monitor process exit
+      process.exitCode.then((_) {
+        if (_runningProcesses.containsKey(commandId)) {
+          _runningProcesses.remove(commandId);
+        }
+      });
+
+    } catch (e) {
+      print('Error executing command with timer: $e');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erro ao executar comando: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -246,7 +339,52 @@ class _CommandCategoriesState extends State<CommandCategories> {
                       ],
                     ),
                     children: commands.map((command) {
+                      final commandId = '${command['name']}_${command['command']}';
+                      _timerControllers.putIfAbsent(
+                        commandId,
+                        () => TextEditingController(),
+                      );
+                      _timerEnabled.putIfAbsent(commandId, () => false);
+
                       return ListTile(
+                        leading: Stack(
+                          children: [
+                            IconButton(
+                              icon: Icon(
+                                Icons.timer,
+                                color: _timerEnabled[commandId]! ? Theme.of(context).primaryColor : Colors.grey,
+                              ),
+                              onPressed: () {
+                                if (!_timerEnabled[commandId]!) {
+                                  _showTimerDialog(context, commandId);
+                                }
+                                setState(() {
+                                  _timerEnabled[commandId] = !_timerEnabled[commandId]!;
+                                  if (!_timerEnabled[commandId]!) {
+                                    _savedTimers.remove(commandId);
+                                  }
+                                });
+                              },
+                            ),
+                            if (_timerEnabled[commandId]! && _savedTimers.containsKey(commandId))
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: Container(
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '${_savedTimers[commandId]}s',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Theme.of(context).primaryColor,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
                         title: Text(command['name']!),
                         subtitle: Text(command['description']!),
                         trailing: Row(
@@ -353,19 +491,27 @@ class _CommandCategoriesState extends State<CommandCategories> {
                             IconButton(
                               icon: const Icon(Icons.play_arrow),
                               onPressed: () async {
-                                await commandProvider.executeCommand(
-                                  context,
-                                  command as Map<String, dynamic>
-                                );
+                                if (_timerEnabled[commandId]! && _savedTimers.containsKey(commandId)) {
+                                  await _executeCommandWithTimer(context, command, commandId, _savedTimers[commandId]!);
+                                } else {
+                                  await commandProvider.executeCommand(
+                                    context,
+                                    command as Map<String, dynamic>
+                                  );
+                                }
                               },
                             ),
                           ],
                         ),
                         onTap: () async {
-                          await commandProvider.executeCommand(
-                            context,
-                            command as Map<String, dynamic>
-                          );
+                          if (_timerEnabled[commandId]! && _savedTimers.containsKey(commandId)) {
+                            await _executeCommandWithTimer(context, command, commandId, _savedTimers[commandId]!);
+                          } else {
+                            await commandProvider.executeCommand(
+                              context,
+                              command as Map<String, dynamic>
+                            );
+                          }
                         },
                       );
                     }).toList(),
